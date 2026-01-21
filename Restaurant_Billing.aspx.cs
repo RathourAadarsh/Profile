@@ -23,7 +23,8 @@ public partial class Restaurant_Billing : System.Web.UI.Page
                 Request.QueryString["tableno"] != null)
             {
                 lblbillno.Text = Request.QueryString["billno"];
-                lbltable.Text = Request.QueryString["tableno"];                
+                lbltable.Text = Request.QueryString["tableno"];
+                lbltablee.Text = lbltable.Text;
                 bindbill();
             }
         }
@@ -35,8 +36,8 @@ public partial class Restaurant_Billing : System.Web.UI.Page
     }
     protected void btnPrint_Click(object sender, EventArgs e)
     {
-        bill.Visible = true;      
-        bindbill();               
+        bill.Visible = true;
+        bindbill();
 
         ScriptManager.RegisterStartupScript(
             this,
@@ -70,7 +71,13 @@ public partial class Restaurant_Billing : System.Web.UI.Page
                 Label17.Text = dt.Rows[0]["tax"].ToString();
                 txtgst.Text = dt.Rows[0]["tax"].ToString();
                 Label18.Text = dt.Rows[0]["grandtotal"].ToString();
-                lblgtotal.Text = dt.Rows[0]["grandtotal"].ToString();                 
+                lblgtotal.Text = dt.Rows[0]["grandtotal"].ToString();
+                string billno= dt.Rows[0]["bill_no"].ToString();
+                bindkot(billno);
+                //lblkotnoo.Text =
+                //    lblid.Text =
+                //    lbldatee.Text =
+                //    lbltime.Text =
             }
         }
         catch (Exception ex)
@@ -79,6 +86,28 @@ public partial class Restaurant_Billing : System.Web.UI.Page
         }
     }
 
+    public void bindkot(string blno)
+    {
+        try
+        {
+            List<string> kotList = new List<string>();
+            string query = "SELECT kot_no FROM kot_Master WHERE billno=@billno ORDER BY kot_no";
+            SqlCommand cmd = new SqlCommand(query, cl.con);
+            cmd.Parameters.AddWithValue("@billno", blno);
+
+            cl.con.Open();
+            SqlDataReader dr = cmd.ExecuteReader();
+            while (dr.Read())
+            {
+                kotList.Add(dr["kot_no"].ToString());
+            }
+            lblkotnoo.Text = string.Join(", ", kotList);
+        }
+        catch (Exception ex)
+        {
+
+        }
+    }
     protected void gridbill_RowDataBound(object sender, GridViewRowEventArgs e)
     {
 

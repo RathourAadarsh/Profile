@@ -33,7 +33,6 @@ public partial class Billing : System.Web.UI.Page
                 hfTableNo.Value = Request.QueryString["table_no"];
                 lblTableNo.Text = hfTableNo.Value;
                 LoadOpenKOT(hfTableNo.Value);
-
                 itemgroup();
                 CalculateBill();
                 GenerateBill();
@@ -52,14 +51,10 @@ public partial class Billing : System.Web.UI.Page
         dt.Columns.Add("Qty", typeof(int));
         dt.Columns.Add("Amount", typeof(decimal));
         dt.Columns.Add("Flag", typeof(int));
+        dt.Columns.Add("SKU", typeof(string));
+        dt.Columns.Add("GST", typeof(decimal));
 
-        SqlCommand cmd = new SqlCommand(@"
-        SELECT d.ItemName, d.Rate, d.Qty, d.Amount, ISNULL(i.flag,1) Flag
-        FROM KOT_Master m
-        INNER JOIN KOT_Detail d ON m.KOT_ID = d.KOT_ID
-        LEFT JOIN item_detail i ON d.ItemName = i.item_name
-        WHERE m.Table_No = @TableNo AND m.IsClosed = 0
-    ", cl.con);
+        SqlCommand cmd = new SqlCommand("SELECT d.ItemName, d.Rate, d.Qty, d.Amount, ISNULL(i.flag,1) Flag,d.sku,d.gst_per FROM KOT_Master m INNER JOIN KOT_Detail d ON m.KOT_ID = d.KOT_ID LEFT JOIN item_detail i ON d.ItemName = i.item_name WHERE m.Table_No = @TableNo AND m.IsClosed = 0 ", cl.con);
 
         cmd.Parameters.AddWithValue("@TableNo", tableNo);
 
@@ -73,6 +68,9 @@ public partial class Billing : System.Web.UI.Page
             r["Qty"] = dr["Qty"];
             r["Amount"] = dr["Amount"];
             r["Flag"] = dr["Flag"];
+            r["SKU"] = dr["sku"];
+            r["GST"] = dr["gst_per"];
+
             dt.Rows.Add(r);
         }
         cl.con.Close();
@@ -83,7 +81,7 @@ public partial class Billing : System.Web.UI.Page
     }
     public void itemgroup()
     {
-        string query = "select item_g_id, item_g_name from Item_group_master";
+        string query = "select item_g_id, item_g_name from Item_group_master order by item_g_name";
         SqlDataAdapter sda = new SqlDataAdapter(query, cl.con);
         DataTable dt = new DataTable();
         sda.Fill(dt);
@@ -129,12 +127,14 @@ public partial class Billing : System.Web.UI.Page
         LinkButton btn = (LinkButton)sender;
         string itemName = btn.Text;
 
-        string query = "SELECT item_sale_rate, flag FROM item_detail WHERE item_name=@name";
+        string query = "SELECT item_sale_rate, flag,sku, gst_per FROM item_detail WHERE item_name=@name";
         SqlCommand cmd = new SqlCommand(query, cl.con);
         cmd.Parameters.AddWithValue("@name", itemName);
 
         decimal rate = 0;
         int flag = 1;
+        string sku = "";
+        decimal gst = 0;
 
         cl.con.Open();
         SqlDataReader dr = cmd.ExecuteReader();
@@ -142,6 +142,8 @@ public partial class Billing : System.Web.UI.Page
         {
             rate = Convert.ToDecimal(dr["item_sale_rate"]);
             flag = Convert.ToInt32(dr["flag"]);
+            sku = dr["sku"].ToString();
+            gst = dr["gst_per"] == DBNull.Value ? 0 : Convert.ToDecimal(dr["gst_per"]);
         }
         cl.con.Close();
         DataTable dt;
@@ -153,7 +155,8 @@ public partial class Billing : System.Web.UI.Page
             dt.Columns.Add("Qty", typeof(int));
             dt.Columns.Add("Amount", typeof(decimal));
             dt.Columns.Add("Flag", typeof(int));
-
+            dt.Columns.Add("SKU", typeof(string));
+            dt.Columns.Add("GST", typeof(decimal));
             Session["BillTable"] = dt;
         }
         else
@@ -177,6 +180,8 @@ public partial class Billing : System.Web.UI.Page
             drNew["Qty"] = 1;
             drNew["Amount"] = rate;
             drNew["Flag"] = flag;
+            drNew["SKU"] = sku;
+            drNew["GST"] = gst;
             dt.Rows.Add(drNew);
         }
 
@@ -233,30 +238,38 @@ public partial class Billing : System.Web.UI.Page
         DataTable dt = (DataTable)Session["BillTable"];
 
         decimal subTotal = 0;
-        decimal taxableAmount = 0;
+        decimal tax = 0;
 
         foreach (DataRow row in dt.Rows)
         {
             decimal amt = Convert.ToDecimal(row["Amount"]);
+            decimal gstPer = row["GST"] == DBNull.Value ? 0 : Convert.ToDecimal(row["GST"]);
+
+            // Sub Total
             subTotal += amt;
 
-            int flag = row["Flag"] == DBNull.Value ? 1 : Convert.ToInt32(row["Flag"]);
-            if (flag == 1)
-                taxableAmount += amt;
+            // Item wise GST
+            tax += Math.Round((amt * gstPer) / 100, 2);
         }
+
+        // Discount
         decimal discount = 0;
         decimal.TryParse(txtdiscount.Text, out discount);
-        if (discount > subTotal) discount = subTotal;
+        if (discount > subTotal)
+            discount = subTotal;
 
         decimal netAmount = subTotal - discount;
-        decimal tax = Math.Round((taxableAmount - discount) * 0.05M, 2);
-        if (tax < 0) tax = 0;
+
+        // Delivery Charge
         decimal deliveryCharge = 0;
         decimal.TryParse(txtdilivery.Text, out deliveryCharge);
 
-        decimal grandTotal = Math.Round(netAmount + tax + deliveryCharge);
-        decimal roundOff = grandTotal - (netAmount + tax + deliveryCharge);
+        // Grand Total
+        decimal exactTotal = netAmount + tax + deliveryCharge;
+        decimal grandTotal = Math.Round(exactTotal);
+        decimal roundOff = grandTotal - exactTotal;
 
+        // UI
         lblSubTotal.Text = subTotal.ToString("0.00");
         lblTax.Text = tax.ToString("0.00");
         lblRoundOff.Text = roundOff.ToString("0.00");
@@ -264,6 +277,7 @@ public partial class Billing : System.Web.UI.Page
 
         CalculateReturn(grandTotal);
     }
+
     protected void txtdilivery_TextChanged(object sender, EventArgs e)
     {
         CalculateBill();
@@ -392,18 +406,22 @@ public partial class Billing : System.Web.UI.Page
 
                 foreach (DataRow r in dt.Rows)
                 {
-                    SqlCommand cmdItem = new SqlCommand("INSERT INTO KOT_Detail(KOT_ID, ItemName, Rate, Qty, Amount) VALUES (@KOT_ID, @Item, @Rate, @Qty, @Amount)", cl.con, tran);
+                    SqlCommand cmdItem = new SqlCommand("INSERT INTO KOT_Detail(KOT_ID, ItemName, Rate, Qty, Amount,sku,gst_per) VALUES (@KOT_ID, @Item, @Rate, @Qty, @Amount,@SKU,@gst)", cl.con, tran);
 
                     cmdItem.Parameters.AddWithValue("@KOT_ID", kotId);
                     cmdItem.Parameters.AddWithValue("@Item", r["ItemName"]);
                     cmdItem.Parameters.AddWithValue("@Rate", r["Rate"]);
                     cmdItem.Parameters.AddWithValue("@Qty", r["Qty"]);
                     cmdItem.Parameters.AddWithValue("@Amount", r["Amount"]);
+                    cmdItem.Parameters.AddWithValue("@sku", r["SKU"]);
+                    cmdItem.Parameters.AddWithValue("@gst", r["GST"]);
+
 
                     cmdItem.ExecuteNonQuery();
                 }
 
                 tran.Commit();
+                dt.Clear();
             }
             catch
             {
@@ -414,7 +432,8 @@ public partial class Billing : System.Web.UI.Page
         if (isPrint)
         {
             Server.Transfer("Print_KOT.aspx?table_no=" + tableNo + "&kotno=" + kotNo+"");
-        } 
+        }
+        Response.Redirect("Dashboard.aspx");
     }
     private string GenerateKOTNo()
     {
@@ -480,7 +499,7 @@ public partial class Billing : System.Web.UI.Page
             {
                 try
                 {
-                    SqlCommand cmdBill = new SqlCommand("INSERT INTO Bill_Master(Bill_No, Table_No, SubTotal, Tax, GrandTotal, PaidAmount, ReturnAmount, PaymentMode, IsPaid,IsRunning,billTime,Discount,DeliveryCharge,Bill_date,RoundOff) OUTPUT INSERTED.Bill_ID VALUES(@BillNo, @TableNo, @SubTotal, @Tax, @GrandTotal, @Paid, @Return, @PayMode, @IsPaid,1,@billTime,@Discount,@DeliveryCharge,GETUTCDATE(),RoundOff)", con, tran);
+                    SqlCommand cmdBill = new SqlCommand("INSERT INTO Bill_Master(Bill_No, Table_No, SubTotal, Tax, GrandTotal, PaidAmount, ReturnAmount, PaymentMode, IsPaid,IsRunning,billTime,Discount,DeliveryCharge,Bill_date,RoundOff) OUTPUT INSERTED.Bill_ID VALUES(@BillNo, @TableNo, @SubTotal, @Tax, @GrandTotal, @Paid, @Return, @PayMode, @IsPaid,1,@billTime,@Discount,@DeliveryCharge,GETUTCDATE(),@RoundOff)", con, tran);
 
                     cmdBill.Parameters.AddWithValue("@BillNo", lblbillno.Text);
                     cmdBill.Parameters.AddWithValue("@TableNo", tableNo);
@@ -500,16 +519,19 @@ public partial class Billing : System.Web.UI.Page
 
                     foreach (DataRow r in dt.Rows)
                     {
-                        SqlCommand cmdItem = new SqlCommand("INSERT INTO Bill_Detail(Bill_ID, ItemName, Rate, Qty, Amount) VALUES(@BillID, @Item, @Rate, @Qty, @Amount)", con, tran);
+                        SqlCommand cmdItem = new SqlCommand("INSERT INTO Bill_Detail(Bill_ID, ItemName, Rate, Qty, Amount,sku,gst_per) VALUES(@BillID, @Item, @Rate, @Qty, @Amount,@sku,@gst_per)", con, tran);
 
                         cmdItem.Parameters.AddWithValue("@BillID", billId);
                         cmdItem.Parameters.AddWithValue("@Item", r["ItemName"]);
                         cmdItem.Parameters.AddWithValue("@Rate", r["Rate"]);
                         cmdItem.Parameters.AddWithValue("@Qty", r["Qty"]);
                         cmdItem.Parameters.AddWithValue("@Amount", r["Amount"]);
+                        cmdItem.Parameters.AddWithValue("@sku", r["SKU"]);
+                        cmdItem.Parameters.AddWithValue("@gst_per", r["GST"]);
+
                         cmdItem.ExecuteNonQuery();
                     }
-                    SqlCommand cmdCloseKot = new SqlCommand("UPDATE KOT_Master SET IsClosed = 1 WHERE Table_No=@TableNo AND IsClosed=0", con, tran);
+                    SqlCommand cmdCloseKot = new SqlCommand("UPDATE KOT_Master SET IsClosed = 1,billno='"+ lblbillno.Text + "' WHERE Table_No=@TableNo AND IsClosed=0", con, tran);
                     cmdCloseKot.Parameters.AddWithValue("@TableNo", tableNo);
                     cmdCloseKot.ExecuteNonQuery();
 

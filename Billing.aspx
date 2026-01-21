@@ -1,9 +1,15 @@
-﻿<%@ Page Title="" Language="C#" MasterPageFile="~/BillingMaster.master" AutoEventWireup="true" CodeFile="Billing.aspx.cs" Inherits="Billing" %>
+﻿<%@ Page Title="" Language="C#" MasterPageFile="./BillingMaster.master" AutoEventWireup="true" CodeFile="Billing.aspx.cs" Inherits="Billing" %>
 
 <asp:Content ID="Content1" ContentPlaceHolderID="head" runat="Server">
 
     <style>
-  
+        .btn-pos {
+            padding: 10px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 700;
+            color: #fff;
+        }
     </style>
     <%--  <script>
         function printContent(el) {
@@ -29,13 +35,16 @@
         <div class="container-fluid">
             <div class="row">
                 <div class="col-md-12" style="box-shadow: 0px 1px 3px 1px #f9580e; border-radius: 5px; padding-top: 8px; padding-bottom: 8px;">
-                    <div class="row" style="border-bottom: 1px solid red; padding-bottom: 4px;">
-                        <div class="col-md-7">
+                    <div class="row" style="border-bottom: 1px solid red; padding-bottom: 1px;">
+                        <div class="col-md-6">
                             <asp:TextBox runat="server" ID="txtnumber" Text="" ForeColor="Red" Font-Bold="true" class="form-control"
                                 Height="35" placeholder="Search Product" AutoPostBack="true" OnTextChanged="txtnumber_TextChanged"></asp:TextBox>
                         </div>
+                        <div class="col-md-1">
+                            <asp:Button ID="Button2" runat="server" Text="Clear All" CssClass="btn-pos red" OnClick="Button1_Click" />
+                        </div>
                         <div class="col-md-2"></div>
-                        <div class="col-md-3">
+                        <div class="col-md-3 text-end">
                             <div class="table-info">
                                 <asp:HiddenField ID="hfTableNo" runat="server" />
                                 <i class='fa-solid fa-utensils'></i>
@@ -100,7 +109,7 @@
                                 </asp:DataList>
                             </asp:Panel>
                         </div>
-                        <div class="col-md-5 p-0">
+                        <div class="col-md-5 p-1">
                             <div class="bill-container">
                                 <div class="bill-grid">
                                     <asp:GridView ID="gvBill" runat="server"
@@ -226,7 +235,7 @@
                                     </label>
                                 </div>
                                 <div class="pos-row pos-paid">
-                                    <label>
+                                    <label style="margin-top:7px;">
                                         <asp:CheckBox ID="chkPaid" runat="server" />
                                         It's Paid
                                     </label>

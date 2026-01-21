@@ -1,4 +1,4 @@
-﻿<%@ Page Title="" Language="C#" MasterPageFile="~/BillingMaster.master" AutoEventWireup="true" CodeFile="Restaurant_Billing.aspx.cs" Inherits="Restaurant_Billing" %>
+﻿<%@ Page Title="" Language="C#" MasterPageFile="./BillingMaster.master" AutoEventWireup="true" CodeFile="Restaurant_Billing.aspx.cs" Inherits="Restaurant_Billing" %>
 
 <asp:Content ID="Content1" ContentPlaceHolderID="head" runat="Server">
     <style>
@@ -41,20 +41,18 @@
         @media print {
 
             @page {
-                size: A4;               
-            }               
+                size: A4;
+            }
 
             #print {
-            
-                width: 3.3in; 
+                width: 3.3in;
                 font-size: 12px;
                 font-family: Arial, sans-serif;
+            }
 
+            td {
+                font-size: 12px;
             }
-            td{
-                font-size:12px;
-            }
-          
         }
     </style>
 </asp:Content>
@@ -160,17 +158,22 @@
                     <div class="col-md-12">
                         <div class="row">
                             <div class="col-md-12">
-                                <h4 style="text-align: center;font-size: 14px; font-weight: 550; margin-bottom:2px;">Bill Invoice</h4>
+                                <h4 style="text-align: center; font-size: 14px; font-weight: 550; margin-bottom: 2px;">Sale Invoice</h4>
                             </div>
                         </div>
                         <div class="row">
                             <div class="col-md-12">
-                                <h4 style="text-align: center; font-family: cursive; font-size: 22px; color: black;font-weight: 900;margin-bottom:3px;">Charans Club & Resorts</h4>
+                                <h4 style="text-align: center; font-family: cursive; font-size: 22px; color: black; font-weight: 900; margin-bottom: 3px;">Charans Club & Resorts</h4>
                             </div>
                         </div>
                         <div class="row">
                             <div class="col-md-12">
-                                <h4 style="text-align: center;font-size: 12px; color: black; margin-bottom:2px;">Reliance Petrol Pump,Matiyari,Chinhat, Lucknow,Uttar Pradesh</h4>
+                                <h4 style="text-align: center; font-size: 12px; color: black; margin-bottom: 2px;">Reliance Petrol Pump,Matiyari,Chinhat,</h4>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-12">
+                                <h4 style="text-align: center; font-size: 12px; color: black; margin-bottom: 2px;">Lucknow,Uttar Pradesh</h4>
                             </div>
                         </div>
                         <div class="row">
@@ -180,7 +183,7 @@
                         </div>
                         <div class="row">
                             <div class="col-md-12">
-                                <h4 style="text-align: center; font-size: 12px; color: black; font-weight: 500;margin-bottom:3px;">GST No. : 09AAAAG56DS14SG</h4>
+                                <h4 style="text-align: center; font-size: 12px; color: black; font-weight: 500; margin-bottom: 3px;">GST No. : 09AAAAG56DS14SG</h4>
                             </div>
                         </div>
                         <div class="form-group" style="border-top: 1px solid black; padding-top: 1px; margin-bottom: 1px !important;">
@@ -190,13 +193,23 @@
                                         <asp:Label runat="server" ID="lbl" Text="Bill No.:" ForeColor="Black"></asp:Label>
                                         <asp:Label runat="server" ID="Label6" Text="" ForeColor="Black"></asp:Label>
                                     </td>
-                                   <%-- <td style="width: 33%; text-align: center;">
-                                        <asp:Label runat="server" ID="Label9" Text="Table No.:" ForeColor="Black"></asp:Label>
-                                        <asp:Label runat="server" ID="Label10" Text="" ForeColor="Black"></asp:Label>
-                                    </td>--%>
                                     <td style="width: 50%; text-align: right;">
                                         <asp:Label runat="server" ID="Label8" Text="Bill Date:" ForeColor="Black"></asp:Label>
-                                        <asp:Label runat="server" ID="lblbilldate" Text="06/09/2022" ForeColor="Black"></asp:Label>
+                                        <asp:Label runat="server" ID="lblbilldate" ForeColor="Black"></asp:Label>
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="form-group" style="border-top: 1px solid black; padding-top: 1px; margin-bottom: 1px !important;">
+                            <table style="width: 100%; font-size: 13px;">
+                                <tr>
+                                    <td style="width: 50%;">
+                                        <asp:Label runat="server" ID="lvhh" Text="Table No. :" ForeColor="Black"></asp:Label>
+                                        <asp:Label runat="server" ID="lbltablee" ForeColor="Black"></asp:Label>
+                                    </td>
+                                    <td style="width: 50%; text-align: right;">
+                                        <asp:Label runat="server" ID="ds" Text="KOT No.:" ForeColor="Black"></asp:Label>
+                                        <asp:Label runat="server" ID="lblkotnoo" ForeColor="Black"></asp:Label>
                                     </td>
                                 </tr>
                             </table>
@@ -283,7 +296,7 @@
                                         <asp:Label runat="server" ID="Label17" Text="0.00"
                                             ForeColor="Black" Style="font-weight: 600; font-size: 15px;"></asp:Label>
                                     </td>
-                                </tr>
+                                </tr>                                   
                                 <tr style="border-top: 1px solid black; border-bottom: 1px solid black;">
                                     <td style="text-align: left; padding-top: 6px; padding-bottom: 6px;">
                                         <asp:Label runat="server" ID="Label15" Text="Grand Total :"
@@ -295,6 +308,11 @@
                                     </td>
                                 </tr>
                             </table>
+                            <div>
+                                <asp:Label runat="server" ID="lblid" ForeColor="Black"></asp:Label>&nbsp;&nbsp;&nbsp;
+                                <asp:Label runat="server" ID="lbldatee" ForeColor="Black"></asp:Label>&nbsp;&nbsp;&nbsp;
+                                <asp:Label runat="server" ID="lbltime" ForeColor="Black"></asp:Label>
+                            </div>
                         </div>
                     </div>
                 </div>
