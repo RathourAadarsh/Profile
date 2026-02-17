@@ -1,0 +1,4 @@
+<add name="new" connectionString="Data Source=SQL5098.site4now.net;Initial Catalog=db_a826a6_ccr;User Id=db_a826a6_ccr_admin;Password=ccr#159@!"/>
+
+
+constr= "Data Source=SQL5054.site4now.net;Initial Catalog=db_a4177c_ims;User Id=db_a4177c_ims_admin;Password=ims@4934#$";
